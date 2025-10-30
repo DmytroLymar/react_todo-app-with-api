@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import cn from 'classnames';
 import { UserWarning } from './UserWarning';
 import {
@@ -34,6 +34,7 @@ export const App: React.FC = () => {
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // load todos on mount
   useEffect(() => {
@@ -44,6 +45,12 @@ export const App: React.FC = () => {
       .catch(() => showError(ERROR_TEXT.load))
       .finally(() => setIsLoading(false));
   }, [hideError, showError]);
+
+  useEffect(() => {
+    if (!isLoading && !isAdding && editingId === null) {
+      inputRef.current?.focus();
+    }
+  }, [isLoading, isAdding, editingId]);
 
   // count active todos
   const itemsLeft = useMemo(
@@ -99,11 +106,6 @@ export const App: React.FC = () => {
     } finally {
       setTempTodo(null);
       setIsAdding(false);
-
-      //keep input focused
-      document
-        .querySelector<HTMLInputElement>('[data-cy="NewTodoField"]')
-        ?.focus();
     }
   };
 
@@ -116,9 +118,7 @@ export const App: React.FC = () => {
     try {
       await deleteTodo(id);
       setTodos(prev => prev.filter(todo => todo.id !== id));
-      document
-        .querySelector<HTMLInputElement>('[data-cy="NewTodoField"]')
-        ?.focus();
+      inputRef.current?.focus();
     } catch {
       showError(ERROR_TEXT.delete);
     } finally {
@@ -164,9 +164,7 @@ export const App: React.FC = () => {
     setIsClearing(false);
 
     if (!anyFailed) {
-      document
-        .querySelector<HTMLInputElement>('[data-cy="NewTodoField"]')
-        ?.focus();
+      inputRef.current?.focus();
     }
   };
 
@@ -321,6 +319,7 @@ export const App: React.FC = () => {
           )}
 
           <NewTodoForm
+            ref={inputRef}
             value={newTitle}
             onChange={setNewTitle}
             onSubmit={handleAddTodo}
